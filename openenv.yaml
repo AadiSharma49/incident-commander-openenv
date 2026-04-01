@@ -1,0 +1,10 @@
+name: incident-commander-openenv
+description: Real-world incident response simulation
+entrypoint: main.py
+tasks:
+  - name: tls-certificate-expiry
+    difficulty: easy
+  - name: db-pool-exhaustion
+    difficulty: medium
+  - name: idp-outage-vs-security
+    difficulty: hard
