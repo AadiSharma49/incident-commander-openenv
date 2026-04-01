@@ -1,0 +1,16 @@
+[project]
+name = "incident-commander-openenv"
+version = "0.1.0"
+description = "OpenEnv RL environment for DevOps incident response simulation"
+authors = [
+  { name = "Aadi Sharma" }
+]
+dependencies = [
+  "fastapi",
+  "uvicorn[standard]",
+  "pydantic"
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
