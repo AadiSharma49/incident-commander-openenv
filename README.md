@@ -1,3 +1,13 @@
+---
+title: Incident Commander OpenEnv
+emoji: 🚀
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # Incident Commander OpenEnv
 
 `incident-commander-openenv` is a production-style OpenEnv environment for incident response simulation. It exposes a deterministic FastAPI environment, typed Pydantic models, task-specific grading, and a root-level inference script suitable for OpenEnv submission and GitHub sharing.
