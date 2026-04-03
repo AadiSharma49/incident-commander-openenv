@@ -1,15 +1,16 @@
 [project]
 name = "incident-commander-openenv"
 version = "0.1.0"
-description = "OpenEnv RL environment for DevOps incident response simulation"
-authors = [
-  { name = "Aadi Sharma" }
-]
+description = "OpenEnv RL environment"
 dependencies = [
   "fastapi",
   "uvicorn[standard]",
-  "pydantic"
+  "pydantic",
+  "openenv-core>=0.2.0"
 ]
+
+[project.scripts]
+server = "server.app:app"
 
 [build-system]
 requires = ["setuptools", "wheel"]
