@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 import os
 from statistics import mean
 
@@ -37,18 +38,47 @@ def maybe_request_plan(client: OpenAI | None, task_id: str) -> str:
     return (response.choices[0].message.content or "").strip() or "baseline-plan"
 
 
-def run_task(env: IncidentCommanderEnvironment, task_id: str) -> dict[str, object]:
+def emit_block(tag: str, payload: dict[str, object]) -> None:
+    print(f"[{tag}] {json.dumps(payload, sort_keys=True)}")
+
+
+def run_task(env: IncidentCommanderEnvironment, task_id: str, plan_label: str) -> dict[str, object]:
     task = TASKS[task_id]
     observation = env.reset(task_id)
+    emit_block(
+        "START",
+        {
+            "task_id": task_id,
+            "difficulty": task.difficulty,
+            "plan": plan_label,
+            "system_status": observation.system_status,
+        },
+    )
+
     done = False
     last_reward = 0.0
+    steps_taken = 0
     for action_type, target in task.baseline_plan:
-        observation, reward, done, _ = env.step(Action(action_type=action_type, target=target))
+        steps_taken += 1
+        observation, reward, done, info = env.step(Action(action_type=action_type, target=target))
         last_reward = reward.score
+        emit_block(
+            "STEP",
+            {
+                "task_id": task_id,
+                "step": steps_taken,
+                "action_type": action_type,
+                "target": target,
+                "reward": reward.score,
+                "done": done,
+                "score": info["score"],
+                "reason": reward.reason,
+            },
+        )
         if done:
             break
     state = env.state()
-    return {
+    result = {
         "task_id": task_id,
         "difficulty": task.difficulty,
         "done": done,
@@ -58,6 +88,8 @@ def run_task(env: IncidentCommanderEnvironment, task_id: str) -> dict[str, objec
         "turns_used": state["turn"],
         "final_status": observation.system_status,
     }
+    emit_block("END", result)
+    return result
 
 
 def main() -> None:
@@ -67,14 +99,10 @@ def main() -> None:
 
     for task_id in TASKS:
         plan_label = maybe_request_plan(client, task_id)
-        result = run_task(env, task_id)
+        result = run_task(env, task_id, plan_label)
         scores.append(result["score"])
-        print(
-            f"{task_id}: score={result['score']:.2f} reward_total={result['reward_total']:.2f} "
-            f"done={result['done']} plan={plan_label}"
-        )
 
-    print(f"average_score: {mean(scores):.2f}")
+    emit_block("END", {"average_score": round(mean(scores), 4), "tasks_completed": len(scores)})
 
 
 if __name__ == "__main__":

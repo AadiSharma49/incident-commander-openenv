@@ -72,7 +72,6 @@ class IncidentCommanderEnvironment:
         )
 
         episode.turn += 1
-        print("DEBUG TARGET:", action.target)
         reward = self._dispatch(action)
         episode.action_history.append(f"{action.action_type}:{action.target}")
         episode.reward_total = round(episode.reward_total + reward.score, 4)
@@ -95,20 +94,8 @@ class IncidentCommanderEnvironment:
         return self._observation(), reward, episode.done, info
 
     def _dispatch(self, action: Action) -> Reward:
-        episode = self._require_episode()
-
         if action.action_type == "inspect":
-            valid_targets = ["certificate", "database", "idp"]
-            if action.target not in valid_targets:
-                return Reward(score=-0.2, reason=f"Unknown inspection target '{action.target}'")
-
-            inspect_target_by_task = {
-                "tls-certificate-expiry": "service_status",
-                "db-pool-exhaustion": "db_dashboard",
-                "idp-outage-vs-security": "vendor_status",
-            }
-            inspect_target = inspect_target_by_task[episode.task.task_id]
-            return self._handle_inspect(inspect_target)
+            return self._handle_inspect(action.target)
 
         handlers = {
             "diagnose": self._handle_diagnose,
@@ -125,6 +112,9 @@ class IncidentCommanderEnvironment:
         episode = self._require_episode()
         normalized = target.lower().strip()
 
+        if action_type == "inspect" and normalized in episode.task.inspections:
+            return normalized
+
         mapping = {
             "tls": "certificate",
             "ssl": "certificate",
@@ -135,30 +125,41 @@ class IncidentCommanderEnvironment:
         if action_type == "inspect":
             task_mapping = {
                 "tls-certificate-expiry": {
-                    "runbook": "certificate",
-                    "tickets": "certificate",
-                    "customers": "certificate",
-                    "metrics": "certificate",
+                    "tls": "service_status",
+                    "ssl": "service_status",
+                    "cert": "service_status",
+                    "certificate": "service_status",
+                    "runbook": "runbook_tls",
+                    "tickets": "customer_tickets",
+                    "customers": "customer_tickets",
+                    "metrics": "metrics_dashboard",
+                    "dashboard": "metrics_dashboard",
                 },
                 "db-pool-exhaustion": {
-                    "db": "database",
-                    "deploy": "database",
-                    "deployment": "database",
-                    "runbook": "database",
-                    "notes": "database",
-                    "database": "database",
+                    "db": "db_dashboard",
+                    "database": "db_dashboard",
+                    "deploy": "deployment_log",
+                    "deployment": "deployment_log",
+                    "release": "deployment_log",
+                    "runbook": "runbook_rollback",
+                    "rollback": "runbook_rollback",
+                    "notes": "incident_notes",
                 },
                 "idp-outage-vs-security": {
-                    "idp": "idp",
-                    "vendor": "idp",
-                    "security": "idp",
-                    "geo": "idp",
-                    "allowlist": "idp",
-                    "vpn": "idp",
-                    "runbook": "idp",
+                    "idp": "vendor_status",
+                    "vendor": "vendor_status",
+                    "status": "vendor_status",
+                    "security": "security_log",
+                    "log": "security_log",
+                    "geo": "geo_allowlist",
+                    "allowlist": "geo_allowlist",
+                    "vpn": "vpn_dashboard",
+                    "runbook": "runbook_identity",
+                    "identity": "runbook_identity",
                 },
             }
-            return task_mapping.get(episode.task.task_id, {}).get(mapping.get(normalized, normalized), mapping.get(normalized, normalized))
+            canonical_target = mapping.get(normalized, normalized)
+            return task_mapping.get(episode.task.task_id, {}).get(canonical_target, canonical_target)
 
         action_mappings = {
             "diagnose": {
@@ -299,8 +300,6 @@ class IncidentCommanderEnvironment:
             if not mitigation_completed:
                 return self._penalty("Validation attempted before the TLS certificate was renewed.")
             episode.validations_passed.append(target)
-            episode.done = True
-            episode.resolution_confirmed = True
             return Reward(
                 score=1.0,
                 reason="Service restored successfully: TLS certificate renewed and service recovering.",
