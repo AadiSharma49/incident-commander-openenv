@@ -18,5 +18,6 @@ htmlcov/
 .ruff_cache/
 .vscode/
 .idea/
+.sixth/
 Thumbs.db
 .DS_Store
