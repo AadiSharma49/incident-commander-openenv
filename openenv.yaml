@@ -1,10 +1,20 @@
 name: incident-commander-openenv
-description: Real-world incident response simulation
+description: Real-world incident response simulation environment for DevOps scenarios
 entrypoint: main.py
+
+environment:
+  framework: openenv
+  type: reinforcement-learning
+
 tasks:
-  - name: tls-certificate-expiry
+  - id: tls-certificate-expiry
+    name: TLS Certificate Expiry
     difficulty: easy
-  - name: db-pool-exhaustion
+
+  - id: db-pool-exhaustion
+    name: Database Pool Exhaustion
     difficulty: medium
-  - name: idp-outage-vs-security
+
+  - id: idp-outage-vs-security
+    name: IDP Outage vs Security Incident
     difficulty: hard
