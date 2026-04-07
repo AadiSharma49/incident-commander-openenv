@@ -190,22 +190,22 @@ If Docker fails with a pipe or engine error, start Docker Desktop first and retr
 
 ## Inference Configuration
 
-`inference.py` supports optional OpenAI-compatible configuration through:
+`inference.py` supports OpenAI-compatible configuration through:
 
 - `API_BASE_URL`
+- `API_KEY`
 - `MODEL_NAME`
-- `HF_TOKEN`
 
 Example:
 
 ```powershell
 $env:API_BASE_URL = "https://api.openai.com/v1"
+$env:API_KEY = "your_proxy_or_openai_key"
 $env:MODEL_NAME = "gpt-4o-mini"
-$env:HF_TOKEN = "your_token"
 python inference.py
 ```
 
-If these variables are not set, the deterministic baseline still runs.
+In submission, `inference.py` should use the injected `API_BASE_URL` and `API_KEY` so requests go through the validator's LiteLLM proxy. If `MODEL_NAME` is missing, the script attempts to discover an available model from the proxy before making the planning call. If no API credentials are present, the deterministic baseline still runs locally without LLM usage.
 
 ## GitHub Hygiene
 
