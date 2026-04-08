@@ -28,7 +28,7 @@ class Action(BaseModel):
 
 
 class Reward(BaseModel):
-    score: float
+    score: float = Field(gt=0.0, lt=1.0)
     reason: str
 
 
@@ -49,8 +49,8 @@ class StateSnapshot(BaseModel):
     turn: int = Field(ge=0)
     max_turns: int = Field(ge=1)
     done: bool
-    score: float = Field(ge=0.0, le=1.0)
-    reward_total: float
+    score: float = Field(gt=0.0, lt=1.0)
+    reward_total: float = Field(gt=0.0, lt=1.0)
     diagnosis: str | None = None
     fixes_applied: list[str] = Field(default_factory=list)
     validations_passed: list[str] = Field(default_factory=list)
