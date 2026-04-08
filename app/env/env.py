@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from itertools import cycle
 
-from app.graders.graders import grade_task
+from app.graders.graders import MAX_SCORE, grade_task
 from app.models import Action, Observation, Reward, StateSnapshot
 from app.tasks.tasks import TASKS, TASK_SEQUENCE, TaskDefinition
 
@@ -80,7 +80,7 @@ class IncidentCommanderEnvironment:
         if self._is_resolved():
             episode.done = True
             episode.resolution_confirmed = True
-            current_score = 1.0
+            current_score = MAX_SCORE
         elif episode.turn >= episode.task.max_turns:
             episode.done = True
 

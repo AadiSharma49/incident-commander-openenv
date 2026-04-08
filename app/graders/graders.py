@@ -4,6 +4,9 @@ from collections.abc import Iterable
 
 from app.tasks.tasks import TASKS
 
+MIN_SCORE = 0.01
+MAX_SCORE = 0.99
+
 
 def _fraction(found: Iterable[str], required: Iterable[str]) -> float:
     required_items = tuple(required)
@@ -33,4 +36,4 @@ def grade_task(state: dict) -> float:
         + 0.1 * communication_score
         - penalties
     )
-    return round(max(0.0, min(1.0, score)), 4)
+    return round(max(MIN_SCORE, min(MAX_SCORE, score)), 4)
