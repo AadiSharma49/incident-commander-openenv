@@ -4,8 +4,8 @@ from collections.abc import Iterable
 
 from app.tasks.tasks import TASKS
 
-MIN_SCORE = 0.01
-MAX_SCORE = 0.99
+MIN_SCORE = 0.05
+MAX_SCORE = 0.95
 
 
 def _fraction(found: Iterable[str], required: Iterable[str]) -> float:
