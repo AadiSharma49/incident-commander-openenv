@@ -9,6 +9,7 @@ from typing import Any
 from openai import OpenAI
 
 from app.env.env import IncidentCommanderEnvironment
+from app.graders.graders import MIN_SCORE
 from app.models import Action
 from app.tasks.tasks import TASKS
 
@@ -168,7 +169,7 @@ def run_task(env: IncidentCommanderEnvironment, task_id: str, plan_label: str) -
                     "target": target,
                     "reward": 0.0,
                     "done": True,
-                    "score": 0.0,
+                    "score": MIN_SCORE,
                     "reason": f"step_failed:{type(exc).__name__}",
                 },
             )
@@ -178,7 +179,7 @@ def run_task(env: IncidentCommanderEnvironment, task_id: str, plan_label: str) -
         state = env.state()
     except Exception:
         state = {
-            "score": 0.0,
+            "score": MIN_SCORE,
             "reward_total": 0.0,
             "turn": steps_taken,
         }
@@ -213,7 +214,7 @@ def main() -> None:
     except Exception as exc:
         emit_block("END", {"error": type(exc).__name__, "tasks_completed": len(scores)})
     finally:
-        average_score = round(mean(scores), 4) if scores else 0.0
+        average_score = round(mean(scores), 4) if scores else MIN_SCORE
         emit_block("END", {"average_score": average_score, "tasks_completed": len(scores)})
 
 
