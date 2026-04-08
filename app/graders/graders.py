@@ -11,18 +11,19 @@ MAX_SCORE = 0.99
 def _fraction(found: Iterable[str], required: Iterable[str]) -> float:
     required_items = tuple(required)
     if not required_items:
-        return 0.99
+        return MAX_SCORE
     found_set = set(found)
-    return len(found_set.intersection(required_items)) / len(required_items)
+    fraction = len(found_set.intersection(required_items)) / len(required_items)
+    return max(MIN_SCORE, min(MAX_SCORE, fraction))
 
 
 def grade_task(state: dict) -> float:
     task = TASKS[state["task_id"]]
     facts_score = _fraction(state.get("known_facts", []), task.required_facts)
     mitigation_score = _fraction(state.get("fixes_applied", []), task.mitigation_targets)
-    diagnosis_score = 0.99 if state.get("diagnosis") == task.diagnosis_target else 0.0
-    validation_score = 0.99 if task.validation_target in state.get("validations_passed", []) else 0.0
-    communication_score = 0.99 if task.communication_target in state.get("communications_sent", []) else 0.0
+    diagnosis_score = MAX_SCORE if state.get("diagnosis") == task.diagnosis_target else MIN_SCORE
+    validation_score = MAX_SCORE if task.validation_target in state.get("validations_passed", []) else MIN_SCORE
+    communication_score = MAX_SCORE if task.communication_target in state.get("communications_sent", []) else MIN_SCORE
     penalties = min(
         0.25,
         state.get("wrong_actions", 0) * 0.1 + state.get("repeated_useless_actions", 0) * 0.05,
