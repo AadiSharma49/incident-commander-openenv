@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from itertools import cycle
 
-from app.graders.graders import MAX_SCORE, grade_task
+from app.graders.graders import MAX_SCORE, MIN_SCORE, grade_task
 from app.models import Action, Observation, Reward, StateSnapshot
 from app.tasks.tasks import TASKS, TASK_SEQUENCE, TaskDefinition
 
@@ -13,7 +13,7 @@ class EpisodeMemory:
     task: TaskDefinition
     turn: int = 0
     done: bool = False
-    reward_total: float = 0.0
+    reward_total: float = MIN_SCORE
     diagnosis: str | None = None
     known_facts: list[str] = field(default_factory=list)
     facts_detail: dict[str, str] = field(default_factory=dict)
@@ -74,7 +74,7 @@ class IncidentCommanderEnvironment:
         episode.turn += 1
         reward = self._dispatch(action)
         episode.action_history.append(f"{action.action_type}:{action.target}")
-        episode.reward_total = round(episode.reward_total + reward.score, 4)
+        episode.reward_total = round(min(MAX_SCORE, episode.reward_total + reward.score), 4)
 
         current_score = grade_task(self._raw_state())
         if self._is_resolved():
@@ -250,7 +250,7 @@ class IncidentCommanderEnvironment:
             return self._penalty(f"Unknown inspection target '{target}'.")
         if target in episode.known_facts:
             episode.repeated_useless_actions += 1
-            return Reward(score=-0.05, reason=f"Inspection '{target}' already completed.")
+            return Reward(score=MIN_SCORE, reason=f"Inspection '{target}' already completed.")
         episode.known_facts.append(target)
         episode.facts_detail[target] = detail
         return Reward(score=0.05, reason=detail)
@@ -262,7 +262,7 @@ class IncidentCommanderEnvironment:
             return self._penalty(f"Diagnosis '{target}' does not fit the observed system behavior.")
         if episode.diagnosis == episode.task.diagnosis_target:
             episode.repeated_useless_actions += 1
-            return Reward(score=-0.05, reason="Diagnosis already established.")
+            return Reward(score=MIN_SCORE, reason="Diagnosis already established.")
         episode.diagnosis = episode.task.diagnosis_target
         if self._facts_ready():
             return Reward(score=0.15, reason="Correct diagnosis established from the available evidence.")
@@ -274,7 +274,7 @@ class IncidentCommanderEnvironment:
             return self._penalty(f"Mitigation '{target}' is not appropriate for this incident.")
         if target in episode.fixes_applied:
             episode.repeated_useless_actions += 1
-            return Reward(score=-0.05, reason=f"Mitigation '{target}' already applied.")
+            return Reward(score=MIN_SCORE, reason=f"Mitigation '{target}' already applied.")
         if episode.diagnosis != episode.task.diagnosis_target:
             return self._penalty("Mitigation attempted before the incident was diagnosed correctly.")
         episode.fixes_applied.append(target)
@@ -288,7 +288,7 @@ class IncidentCommanderEnvironment:
             return self._penalty(f"Validation '{target}' is not defined for this task.")
         if target in episode.validations_passed:
             episode.repeated_useless_actions += 1
-            return Reward(score=-0.05, reason="Validation already performed.")
+            return Reward(score=MIN_SCORE, reason="Validation already performed.")
         if episode.task.task_id == "tls-certificate-expiry":
             diagnosis_completed = episode.diagnosis == episode.task.diagnosis_target
             mitigation_completed = (
@@ -317,7 +317,7 @@ class IncidentCommanderEnvironment:
             return self._penalty(f"Communication action '{target}' is not recognized.")
         if target in episode.communications_sent:
             episode.repeated_useless_actions += 1
-            return Reward(score=-0.05, reason="The customer update was already sent.")
+            return Reward(score=MIN_SCORE, reason="The customer update was already sent.")
         if episode.diagnosis != episode.task.diagnosis_target:
             return self._penalty("Communication attempted before a correct diagnosis was available.")
         episode.communications_sent.append(target)
@@ -345,7 +345,7 @@ class IncidentCommanderEnvironment:
     def _penalty(self, reason: str) -> Reward:
         episode = self._require_episode()
         episode.wrong_actions += 1
-        return Reward(score=-0.05, reason=reason)
+        return Reward(score=MIN_SCORE, reason=reason)
 
     def _observation(self) -> Observation:
         episode = self._require_episode()

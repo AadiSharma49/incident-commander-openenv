@@ -6,6 +6,7 @@ import os
 from openai import OpenAI
 
 from app.env.env import IncidentCommanderEnvironment
+from app.graders.graders import MIN_SCORE
 from app.models import Action
 from app.tasks.tasks import TASKS
 
@@ -75,7 +76,7 @@ def run_episode(env: IncidentCommanderEnvironment, client: OpenAI, task_id: str)
             steps_taken += 1
             action_text = format_action(action_type, target)
             error_text = "null"
-            reward_value = 0.0
+            reward_value = MIN_SCORE
             done = False
 
             try:
