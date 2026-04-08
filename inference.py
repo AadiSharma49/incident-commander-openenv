@@ -9,7 +9,7 @@ from typing import Any
 from openai import OpenAI
 
 from app.env.env import IncidentCommanderEnvironment
-from app.graders.graders import MIN_SCORE
+from app.graders.graders import MAX_SCORE, MIN_SCORE
 from app.models import Action
 from app.tasks.tasks import TASKS
 
@@ -20,6 +20,10 @@ MODEL_NAME = (
 )
 API_KEY = os.getenv("API_KEY")
 HAS_PROXY_ENV = "API_BASE_URL" in os.environ or "API_KEY" in os.environ
+
+
+def bounded_score(value: float) -> float:
+    return round(max(MIN_SCORE, min(MAX_SCORE, float(value))), 4)
 
 
 def build_openai_client() -> OpenAI | None:
@@ -153,7 +157,7 @@ def run_task(env: IncidentCommanderEnvironment, task_id: str, plan_label: str) -
                     "target": target,
                     "reward": reward.score,
                     "done": done,
-                    "score": info["score"],
+                    "score": bounded_score(info["score"]),
                     "reason": reward.reason,
                 },
             )
@@ -210,11 +214,11 @@ def main() -> None:
             except Exception:
                 plan_label = "baseline-plan"
             result = run_task(env, task_id, plan_label)
-            scores.append(float(result["score"]))
+            scores.append(bounded_score(result["score"]))
     except Exception as exc:
         emit_block("END", {"error": type(exc).__name__, "tasks_completed": len(scores)})
     finally:
-        average_score = round(mean(scores), 4) if scores else MIN_SCORE
+        average_score = bounded_score(mean(scores)) if scores else MIN_SCORE
         emit_block("END", {"average_score": average_score, "tasks_completed": len(scores)})
 
 

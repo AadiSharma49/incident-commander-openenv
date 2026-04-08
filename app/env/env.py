@@ -301,7 +301,7 @@ class IncidentCommanderEnvironment:
                 return self._penalty("Validation attempted before the TLS certificate was renewed.")
             episode.validations_passed.append(target)
             return Reward(
-                score=1.0,
+                score=MAX_SCORE,
                 reason="Service restored successfully: TLS certificate renewed and service recovering.",
             )
         if not self._all_fixes_applied():
@@ -322,7 +322,7 @@ class IncidentCommanderEnvironment:
             return self._penalty("Communication attempted before a correct diagnosis was available.")
         episode.communications_sent.append(target)
         if self._is_resolved():
-            return Reward(score=1.0, reason="Full resolution achieved and communicated clearly.")
+            return Reward(score=MAX_SCORE, reason="Full resolution achieved and communicated clearly.")
         return Reward(score=0.1, reason="Customer communication sent with the current incident status.")
 
     def _facts_ready(self) -> bool:
