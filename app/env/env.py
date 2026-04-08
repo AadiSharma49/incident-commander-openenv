@@ -250,10 +250,10 @@ class IncidentCommanderEnvironment:
             return self._penalty(f"Unknown inspection target '{target}'.")
         if target in episode.known_facts:
             episode.repeated_useless_actions += 1
-            return Reward(score=-0.2, reason=f"Inspection '{target}' already completed.")
+            return Reward(score=-0.05, reason=f"Inspection '{target}' already completed.")
         episode.known_facts.append(target)
         episode.facts_detail[target] = detail
-        return Reward(score=0.1, reason=detail)
+        return Reward(score=0.05, reason=detail)
 
     def _handle_diagnose(self, target: str) -> Reward:
         episode = self._require_episode()
@@ -262,11 +262,11 @@ class IncidentCommanderEnvironment:
             return self._penalty(f"Diagnosis '{target}' does not fit the observed system behavior.")
         if episode.diagnosis == episode.task.diagnosis_target:
             episode.repeated_useless_actions += 1
-            return Reward(score=-0.2, reason="Diagnosis already established.")
+            return Reward(score=-0.05, reason="Diagnosis already established.")
         episode.diagnosis = episode.task.diagnosis_target
         if self._facts_ready():
-            return Reward(score=0.3, reason="Correct diagnosis established from the available evidence.")
-        return Reward(score=0.1, reason="Diagnosis is plausible, but it is not yet backed by enough inspected evidence.")
+            return Reward(score=0.15, reason="Correct diagnosis established from the available evidence.")
+        return Reward(score=0.08, reason="Diagnosis is plausible, but it is not yet backed by enough inspected evidence.")
 
     def _handle_mitigate(self, target: str) -> Reward:
         episode = self._require_episode()
@@ -274,13 +274,13 @@ class IncidentCommanderEnvironment:
             return self._penalty(f"Mitigation '{target}' is not appropriate for this incident.")
         if target in episode.fixes_applied:
             episode.repeated_useless_actions += 1
-            return Reward(score=-0.2, reason=f"Mitigation '{target}' already applied.")
+            return Reward(score=-0.05, reason=f"Mitigation '{target}' already applied.")
         if episode.diagnosis != episode.task.diagnosis_target:
             return self._penalty("Mitigation attempted before the incident was diagnosed correctly.")
         episode.fixes_applied.append(target)
         if self._all_fixes_applied():
-            return Reward(score=0.5, reason="Correct remediation plan fully applied.")
-        return Reward(score=0.2, reason=f"Mitigation '{target}' applied and system pressure is reducing.")
+            return Reward(score=0.2, reason="Correct remediation plan fully applied.")
+        return Reward(score=0.1, reason=f"Mitigation '{target}' applied and system pressure is reducing.")
 
     def _handle_validate(self, target: str) -> Reward:
         episode = self._require_episode()
@@ -288,7 +288,7 @@ class IncidentCommanderEnvironment:
             return self._penalty(f"Validation '{target}' is not defined for this task.")
         if target in episode.validations_passed:
             episode.repeated_useless_actions += 1
-            return Reward(score=-0.2, reason="Validation already performed.")
+            return Reward(score=-0.05, reason="Validation already performed.")
         if episode.task.task_id == "tls-certificate-expiry":
             diagnosis_completed = episode.diagnosis == episode.task.diagnosis_target
             mitigation_completed = (
@@ -301,7 +301,7 @@ class IncidentCommanderEnvironment:
                 return self._penalty("Validation attempted before the TLS certificate was renewed.")
             episode.validations_passed.append(target)
             return Reward(
-                score=MAX_SCORE,
+                score=0.14,
                 reason="Service restored successfully: TLS certificate renewed and service recovering.",
             )
         if not self._all_fixes_applied():
@@ -317,13 +317,13 @@ class IncidentCommanderEnvironment:
             return self._penalty(f"Communication action '{target}' is not recognized.")
         if target in episode.communications_sent:
             episode.repeated_useless_actions += 1
-            return Reward(score=-0.2, reason="The customer update was already sent.")
+            return Reward(score=-0.05, reason="The customer update was already sent.")
         if episode.diagnosis != episode.task.diagnosis_target:
             return self._penalty("Communication attempted before a correct diagnosis was available.")
         episode.communications_sent.append(target)
         if self._is_resolved():
-            return Reward(score=MAX_SCORE, reason="Full resolution achieved and communicated clearly.")
-        return Reward(score=0.1, reason="Customer communication sent with the current incident status.")
+            return Reward(score=0.13, reason="Full resolution achieved and communicated clearly.")
+        return Reward(score=0.05, reason="Customer communication sent with the current incident status.")
 
     def _facts_ready(self) -> bool:
         episode = self._require_episode()
@@ -345,7 +345,7 @@ class IncidentCommanderEnvironment:
     def _penalty(self, reason: str) -> Reward:
         episode = self._require_episode()
         episode.wrong_actions += 1
-        return Reward(score=-0.2, reason=reason)
+        return Reward(score=-0.05, reason=reason)
 
     def _observation(self) -> Observation:
         episode = self._require_episode()
