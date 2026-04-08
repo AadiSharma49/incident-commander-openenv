@@ -6,7 +6,7 @@ import os
 from openai import OpenAI
 
 from app.env.env import IncidentCommanderEnvironment
-from app.graders.graders import MIN_SCORE
+from app.graders.graders import MAX_SCORE, MIN_SCORE
 from app.models import Action
 from app.tasks.tasks import TASKS
 
@@ -22,6 +22,10 @@ def format_bool(value: bool) -> str:
 
 def format_reward(value: float) -> str:
     return f"{value:.2f}"
+
+
+def clamp_score(value: float) -> float:
+    return max(MIN_SCORE, min(MAX_SCORE, float(value)))
 
 
 def format_action(action_type: str, target: str) -> str:
@@ -69,6 +73,7 @@ def run_episode(env: IncidentCommanderEnvironment, client: OpenAI, task_id: str)
     rewards: list[str] = []
     steps_taken = 0
     success = False
+    final_score = MIN_SCORE
 
     try:
         env.reset(task_id)
@@ -96,8 +101,12 @@ def run_episode(env: IncidentCommanderEnvironment, client: OpenAI, task_id: str)
             if done:
                 break
     finally:
+        try:
+            final_score = clamp_score(env.state()["score"])
+        except Exception:
+            final_score = clamp_score(sum(float(reward) for reward in rewards))
         print(
-            f"[END] success={format_bool(success)} steps={steps_taken} "
+            f"[END] task={task_id} score={format_reward(final_score)} success={format_bool(success)} steps={steps_taken} "
             f"rewards={','.join(rewards)}"
         )
 
